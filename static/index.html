@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Defect Augmentation Tool</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div id="app">
+  <!-- Top Toolbar -->
+  <header class="toolbar">
+    <div class="toolbar-left">
+      <h1>Defect Augmentation</h1>
+      <span id="bg-info">No background selected</span>
+    </div>
+    <div class="toolbar-center">
+      <button id="btn-prev" class="btn" title="Previous Background (←)">&larr; Prev</button>
+      <span id="bg-index" class="page-indicator">- / -</span>
+      <button id="btn-next" class="btn" title="Next Background (→)">Next &rarr;</button>
+    </div>
+    <div class="toolbar-right">
+      <span id="status" class="status">Ready</span>
+      <button id="btn-undo" class="btn" title="Undo last paste">Undo</button>
+      <span style="font-size:11px;color:#888">Name:</span>
+      <input id="output-name" class="output-name-input" placeholder="e.g. aug_001" size="16">
+      <button id="btn-save" class="btn btn-primary" title="Save to disk">Save</button>
+      <button id="btn-download" class="btn btn-primary">Download</button>
+    </div>
+  </header>
+
+  <!-- Main 3-panel layout -->
+  <div class="main-panels">
+    <!-- Left: Image Browser -->
+    <aside class="panel panel-left">
+      <div class="panel-header">
+        <h2>Backgrounds <span id="image-count"></span></h2>
+        <select id="label-filter" class="filter-select">
+          <option value="all">All</option>
+          <option value="FM">FM</option>
+          <option value="mold">mold</option>
+          <option value="scratch">scratch</option>
+        </select>
+      </div>
+      <div id="image-list" class="image-list">
+        <div class="loading">Loading...</div>
+      </div>
+    </aside>
+
+    <!-- Center: Preview Canvas -->
+    <section class="panel panel-center">
+      <div class="canvas-container">
+        <canvas id="preview-canvas" width="451" height="363"></canvas>
+        <div class="canvas-placeholder" id="canvas-placeholder">
+          Click a background on the left
+        </div>
+      </div>
+      <div class="paste-indicator">
+        <span id="paste-hint">Click on canvas to set paste position</span>
+        <span id="paste-count" style="display:none">Pastes: 0</span>
+      </div>
+    </section>
+
+    <!-- Right: Templates + Defect Sources -->
+    <aside class="panel panel-right">
+      <!-- Template Library -->
+      <div class="template-section">
+        <div class="panel-header">
+          <h2>Templates</h2>
+          <button id="btn-clear-templates" class="btn btn-sm">Clear</button>
+        </div>
+        <div id="template-list" class="template-list">
+          <div class="empty-hint">Click defect labels below to add</div>
+        </div>
+        <div id="template-preview" class="template-preview" style="display:none;">
+          <div class="tp-header">Template Preview — source image + defect region</div>
+          <div class="tp-image-wrap">
+            <canvas id="tp-canvas" width="451" height="363"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Defect Source Browser -->
+      <div class="defect-source-section">
+        <div class="defect-source-header">
+          <h2>Defect Sources</h2>
+          <div style="display:flex;gap:4px">
+            <button id="btn-restore-sources" class="btn btn-sm" title="Restore all hidden sources" style="font-size:9px">↺</button>
+            <button id="btn-toggle-sources" class="btn btn-sm" title="Show/hide sources">−</button>
+          </div>
+        </div>
+        <div class="source-filter-row">
+          <select id="defect-label-filter" class="filter-select">
+            <option value="all">All labels</option>
+            <option value="FM">FM only</option>
+            <option value="mold">mold only</option>
+            <option value="scratch">scratch only</option>
+          </select>
+          <button id="btn-invert-filter" class="btn btn-sm" title="Invert: show only images WITHOUT selected label">¬</button>
+        </div>
+        <div id="defect-source-list" class="defect-source-list">
+          <div class="loading">Loading...</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Bottom: Controls -->
+  <footer class="controls-panel">
+    <div class="control-group">
+      <h3>Transform</h3>
+      <div class="slider-row">
+        <label>Scale <span id="val-scale">1.00</span></label>
+        <input type="range" id="slider-scale" min="0.1" max="3.0" step="0.02" value="1.0">
+      </div>
+      <div class="slider-row">
+        <label>Rotation <span id="val-rotation">0°</span></label>
+        <input type="range" id="slider-rotation" min="-180" max="180" step="1" value="0">
+      </div>
+      <div class="slider-row">
+        <label>Shear X <span id="val-shearx">0.00</span></label>
+        <input type="range" id="slider-shearx" min="-0.5" max="0.5" step="0.01" value="0">
+      </div>
+      <div class="slider-row">
+        <label>Shear Y <span id="val-sheary">0.00</span></label>
+        <input type="range" id="slider-sheary" min="-0.5" max="0.5" step="0.01" value="0">
+      </div>
+    </div>
+
+    <div class="control-group">
+      <h3>Color</h3>
+      <div class="slider-row">
+        <label>Brightness <span id="val-brightness">0</span></label>
+        <input type="range" id="slider-brightness" min="-100" max="100" step="1" value="0">
+      </div>
+      <div class="slider-row">
+        <label>Contrast <span id="val-contrast">1.00</span></label>
+        <input type="range" id="slider-contrast" min="0.1" max="3.0" step="0.02" value="1.0">
+      </div>
+      <div class="slider-row">
+        <label>Hue Shift <span id="val-hue">0</span></label>
+        <input type="range" id="slider-hue" min="-90" max="90" step="1" value="0">
+      </div>
+      <div class="slider-row">
+        <label>Saturation <span id="val-saturation">1.00</span></label>
+        <input type="range" id="slider-saturation" min="0.0" max="3.0" step="0.02" value="1.0">
+      </div>
+    </div>
+
+    <div class="control-group control-actions">
+      <button id="btn-preview" class="btn">Preview</button>
+      <button id="btn-apply" class="btn btn-primary btn-large">Save Paste</button>
+      <button id="btn-random" class="btn">Randomize</button>
+    </div>
+  </footer>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/canvas.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>
